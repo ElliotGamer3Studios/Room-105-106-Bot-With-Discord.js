@@ -1,0 +1,10 @@
+{
+	"name": "games",
+	"version": "1.0.0",
+	"description": "gamer",
+	"main": "main.js",
+	"author": "ElliotGamer3",
+	"dependencies": {
+		"discord.js": "^12.1.1"
+	}
+}
