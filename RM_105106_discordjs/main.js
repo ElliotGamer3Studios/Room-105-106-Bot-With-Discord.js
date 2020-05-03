@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const Events = require("events");
 const fs = require("fs");
 const Game = require("./gameClasses/game.js");
+const Hangman = require("./gameClasses/hangman.js");
 const TimerEmitter = new Events.EventEmitter();
 const CommandEmitter = new Events.EventEmitter();
 const GameEmitter = new Events.EventEmitter();
@@ -14,16 +15,21 @@ let commandList = [
 	"help",
 	"ping",
 	"timer"//,
-	// "game",
-	// "hangman"
+	"game",
+	"hangman"
 ]
 let games = [];
 
 // Game events
 
-GameEmitter.on("newGame", function (message, args, gameType, gameList)
+GameEmitter.on("game", function (message, args) 
 {
-	_newGame(message, args, gameType, gameList);
+	_game(message, args);
+});
+
+GameEmitter.on("display", function (channel, gameIndex, gameList) 
+{
+	_game(message, args);
 });
 
 GameEmitter.on("endGame", function (gameList, gameIndex)
@@ -33,28 +39,51 @@ GameEmitter.on("endGame", function (gameList, gameIndex)
 
 // Game Functions
 
+function checkGameAt(gameList, index)
+{
+	if (!(typeof gameList[index] === 'undefined') && gameList[index].gameover())
+	{
+		GameEmitter.emit("endGame", gameList, index);
+	}
+}
+
+function getGameIndex(gameList, gameId)
+{
+	let index = -1;
+
+	for (let i = 0; i < gameList.length; i++)
+	{
+		if (!(typeof gameList[i] === 'undefined') && (parseInt(gameList[i].gameID) === parseInt(gameId)))
+		{
+			index = i;
+		}
+	}
+	return index;
+}
+
+function getGame(gameList, gameID)
+{
+	if (getGameIndex(gameList, gameID) === -1)
+	{
+		return undefined;
+	}
+	return gameList[getGameIndex(gameList, gameID)];
+
+}
+
 function checkGames(gameList)
 {
 	for (let i = 0; i < gameList.length; i++)
 	{
-		if (gameList[i].game.gameover())
-		{
-			GameEmitter.emit("endGame", gameList, i);
-		}
+		checkGameAt(gameList, i);
 	}
 }
 
 // Game Callbacks
 
-
-function _newGame(message, args, gameType, gameList)
-{
-	message.channel.send(`Your game number is ${gameList.push(new Game(message, args, gameType))}`);
-}
-
 function _endGame(gameList, gameIndex)
 {
-	gameList.splice(gameIndex, 1);
+	gameList.splice(gameIndex, 1, undefined);
 }
 
 let stopwatch = {
@@ -143,8 +172,8 @@ function _timerEnd(timerIndex)
 CommandEmitter.on('game', function (message, args) 
 {
 	_game(message, args);
+	checkGames(games);
 });
-
 CommandEmitter.on('hangman', function (message, args) 
 {
 	_hangman(message, args);
@@ -178,6 +207,11 @@ function writeJSON(filename, JSONobj)
 	fs.writeFileSync(filename, JSON.stringify(JSONobj));
 }
 
+function isString(value) 
+{
+	return typeof value === 'string';
+}
+
 function isValidPrefix(prefix)
 {
 	let exemptChars = "\\;";
@@ -208,9 +242,9 @@ function listCommands()
 
 // Command Callback Functions
 
-function _hangman(message, args)
+function _hangman(message, args, gameID = games.length + 1)
 {
-	GameEmitter.emit('newGame', message, args, 'hangman', games);
+	message.channel.send(`Your game number is ${games.push(new Hangman(gameID, message.channel, args[0]))}`);
 }
 
 function _help(message, args)
@@ -218,12 +252,12 @@ function _help(message, args)
 	let response = "";
 	switch (args)
 	{
-		// case "game":
-		// 	response = config.prefix + "game <gameNumber> <gameAction> :: Does <gameAction> in game <gameNumber>.";
-		// 	break;
-		// case "hangman":
-		// 	response = config.prefix + "hangman <difficulty> [guesses] :: Starts a <difficulty> hangman game (Default Guesses = 5).";
-		// 	break;
+		case "game":
+			response = config.prefix + "game <gameNumber> <gameAction> :: Does <gameAction> in game <gameNumber>.";
+			break;
+		case "hangman":
+			response = config.prefix + "hangman <difficulty> [guesses] :: Starts a <difficulty> hangman game (Default Guesses = 5).";
+			break;
 		case "help":
 			response = config.prefix + "help [command] :: Shows additional info about [command]\n";
 			response += config.prefix + "help :: Shows all commands.";
@@ -255,9 +289,22 @@ function _prefix(message, newPrefix)
 
 function _game(message, args)
 {
-	if (typeof args[0] === 'number' && (args[0] >= 0 && args[0] < games.length))
+	let game = undefined;
+	let arg1 = args.shift();
+	game = getGame(games, parseInt(arg1));
+	let gameAction = args.filter(isString);
+	if (typeof game === 'undefined')
 	{
-		games[args.shift() - 1].turn(message, args);
+		console.log('Not a game');
+	}
+	else if (gameAction.length <= 0)
+	{
+		message.channel.send(game.toString());
+		console.info(game.info());
+	}
+	else
+	{
+		game.turn(message.channel, gameAction[0]);
 	}
 }
 
@@ -325,12 +372,12 @@ function _botMessaged(message)
 		let args = messageArr;
 		switch (command)
 		{
-			// case 'game':
-			// 	CommandEmitter.emit('game', message, args);
-			// 	break;
-			// case 'hangman':
-			// 	CommandEmitter.emit('hangman', message, args);
-			// 	break;
+			case 'game':
+				CommandEmitter.emit('game', message, args);
+				break;
+			case 'hangman':
+				CommandEmitter.emit('hangman', message, args);
+				break;
 			case "help":
 				CommandEmitter.emit("help", message, args);
 				break;

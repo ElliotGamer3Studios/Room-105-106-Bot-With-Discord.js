@@ -1,47 +1,23 @@
-const _Hangman = require("./hangman.js");
 module.exports = class Game
 {
-	constructor(message, args, gameType)
+	constructor(channel, gameType)
 	{
-		this._message = message;
-		this._args = args;
-		this._gameover = false;
-		switch (gameType.toLowerCase())
-		{
-			case 'hangman':
-				this._game = new _Hangman(this._message, this._args[0], this._args[1]);
-			default:
-				this._game = undefined;
-		}
+		this._channel = channel;
+		this._gameType = gameType;
 	}
 
-	get game()
+	get gameType()
+	{ return this._gameType; }
+
+	get channel()
+	{ return this._channel; }
+
+	set channel(newChannel)
+	{ this._channel = newChannel; }
+
+	info()
 	{
-		return this._game;
+		return `Channel: ${this._channel} :: GameType: ${this._gameType}`;
 	}
 
-	gameover()
-	{
-		if (typeof this._game !== 'undefined')
-		{
-			return this._game.gameover();
-		}
-	}
-
-	turn(message, args)
-	{
-		if (typeof this._game !== 'undefined')
-		{
-			this._game.turn(message, args);
-		}
-	}
-
-	toString()
-	{
-		if (typeof this._game !== 'undefined')
-		{
-			return this._game.toString();
-		}
-		return undefined;
-	}
 };
