@@ -1,7 +1,7 @@
 {
-	"name": "games",
-	"version": "1.0.0",
-	"description": "gamer",
+	"name": "room_105_106",
+	"version": "1.0.6",
+	"description": "The bot of the server",
 	"main": "main.js",
 	"author": "ElliotGamer3",
 	"dependencies": {
