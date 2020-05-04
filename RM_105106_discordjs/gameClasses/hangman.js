@@ -1,42 +1,50 @@
-module.exports = class Hangman
+const Game = require('./game.js');
+module.exports = class Hangman extends Game
 {
-	constructor(message, difficulty = 'normal', guesses = 5)
+	constructor(gameID, channel, guesses = 5)
 	{
+		super(channel, 'hangman');
+		this._gameID = gameID;
 		let fs = require('fs');
+		this._channel = channel;
 		this._gameover = false;
 		this._guessesLeft = guesses;
 		this._guessedLetters = "";
-		this._message = message;
 		this._HangmanJSON = JSON.parse(fs.readFileSync('json/games.json'));
 		this._words = this._HangmanJSON['hangman']['words']
-		this._word = this._words[parseInt(Math.random() % this._words.length - 1)].toLowerCase();
-		this._hiddenWord = '*'.repeat(this._word.length);
-		this._chars = [];
-		for (let i = 0; i < this._word.length; i++)
-		{ this._chars[i] = this._word.charAt(i); }
+		this._word = this._words[parseInt(Math.floor(Math.random() * this._words.length))].toLowerCase();
+		this._hiddenWord = '-'.repeat(this._word.length);
+		this._chars = Array.from(this._word);
+		this._channel.send(this.toString());
+	}
 
-		message.channel.send(this.toString());
-
+	get hiddenWord()
+	{
+		return this._hiddenWord;
 	}
 
 	// required methods
+
+	get gameID()
+	{ return this._gameID; }
 
 	gameover()
 	{
 		return this._gameover;
 	}
 
-	turn(message, args)
+	turn(channel, args)
 	{
-		if (args[0].length === 1)
+		this._channel = channel;
+		let guess = args.toString();
+		if (guess.length === 1)
 		{
-			this.guessLetter(args[0].toLowerCase());
+			this.guessLetter(guess.toLowerCase());
 		}
-		else if (args[0].length >= 2)
+		else if (guess.length >= 2)
 		{
-			this.guessWord(args[0].toLowerCase());
+			this.guessWord(guess.toLowerCase());
 		}
-		message.channel.send(this.toString());
 	}
 
 	toString()
@@ -61,11 +69,11 @@ module.exports = class Hangman
 		console.log(word);
 		if (this._word.toLowerCase() === word.toLowerCase())
 		{
-			this._message.channel.send(`You win. the word was ${this._word}.`);
+			this._channel.send(`You win. The word was ${this._word}.`);
 		}
 		else
 		{
-			this._message.channel.send(`You lose. the word was ${this._word}.`);
+			this._channel.send(`You lose. The word was ${this._word}.`);
 		}
 		this._gameover = true;
 	}
@@ -80,7 +88,7 @@ module.exports = class Hangman
 		{
 			if (letter === this._chars[i])
 			{
-				this._hiddenWord[i] = letter;
+				this._hiddenWord = this._hiddenWord.slice(0, i) + letter + this._hiddenWord.substr(i + 1);
 				findCount++;
 			}
 		}
@@ -88,26 +96,26 @@ module.exports = class Hangman
 		if (findCount === 0)
 		{
 			this._guessesLeft--;
-			this._message.reply(`${letter} is incorrect.`);
+			this._channel.send(`${letter} is incorrect.`);
 		}
 		else
 		{
-			this._message.reply(`${letter} is correct.`);
+			this._channel.send(`${letter} is correct.`);
 		}
 
 		if (this.hasLost())
 		{
-			this._message.channel.send(`You loss. the word was ${this._word}.`);
+			this._channel.send(`You lose. The word was ${this._word}.`);
 			this._gameover = true;
 		}
 		else if (this.hasWon())
 		{
-			this._message.channel.send(`You win. the word was ${this._word}.`);
+			this._channel.send(`You win. The word was ${this._word}.`);
 			this._gameover = true;
 		}
 		else
 		{
-			this._message.channel.send(this.toString());
+			this._channel.send(this.toString());
 		}
 
 	}
