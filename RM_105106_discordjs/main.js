@@ -14,7 +14,7 @@ const config = readJSON("./json/config.json");
 let commandList = [
 	"help",
 	"ping",
-	"timer"//,
+	"timer",
 	"game",
 	"hangman"
 ]
@@ -253,13 +253,15 @@ function _help(message, args)
 	switch (args)
 	{
 		case "game":
-			response = config.prefix + "game <gameNumber> <gameAction> :: Does <gameAction> in game <gameNumber>.";
+			response = config.prefix + "game <gameNumber> [gameAction] :: Does [gameAction] in game <gameNumber>.";
+			response += config.prefix + "game <gameNumber> :: Shows info about game <gameNumber>.";
+			response += "\nExample: ~game 1 a\nExample: ~game 2 apple\nExample: ~game 3";
 			break;
 		case "hangman":
-			response = config.prefix + "hangman <difficulty> [guesses] :: Starts a <difficulty> hangman game (Default Guesses = 5).";
+			response = config.prefix + "hangman [guesses] :: Starts a new hangman game (Default Guesses = 5).";
 			break;
 		case "help":
-			response = config.prefix + "help [command] :: Shows additional info about [command]\n";
+			response = config.prefix + "help [command] :: Shows additional info about [command].\n";
 			response += config.prefix + "help :: Shows all commands.";
 			break;
 		case "ping":
