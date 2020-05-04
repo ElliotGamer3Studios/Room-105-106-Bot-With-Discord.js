@@ -53,7 +53,7 @@ function getGameIndex(gameList, gameId)
 
 	for (let i = 0; i < gameList.length; i++)
 	{
-		if (!(typeof gameList[i] === 'undefined') && (parseInt(gameList[i].gameID) === parseInt(gameId)))
+		if (!(typeof gameList[i] === 'undefined') && (gameList[i].gameID === gameId))
 		{
 			index = i;
 		}
@@ -242,7 +242,7 @@ function listCommands()
 
 // Command Callback Functions
 
-function _hangman(message, args, gameID = games.length + 1)
+function _hangman(message, args, gameID = "" + (games.length + 1))
 {
 	message.channel.send(`Your game number is ${games.push(new Hangman(gameID, message.channel, args[0]))}`);
 }
@@ -292,8 +292,8 @@ function _prefix(message, newPrefix)
 function _game(message, args)
 {
 	let game = undefined;
-	let arg1 = args.shift();
-	game = getGame(games, parseInt(arg1));
+	let gameID = args.shift();
+	game = getGame(games, gameID);
 	let gameAction = args.filter(isString);
 	if (typeof game === 'undefined')
 	{

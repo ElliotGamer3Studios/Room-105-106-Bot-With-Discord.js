@@ -4,7 +4,7 @@ module.exports = class Hangman extends Game
 	constructor(gameID, channel, guesses = 5)
 	{
 		super(channel, 'hangman');
-		this._gameID = gameID;
+		this._gameID = "" + gameID;
 		let fs = require('fs');
 		this._channel = channel;
 		this._gameover = false;
