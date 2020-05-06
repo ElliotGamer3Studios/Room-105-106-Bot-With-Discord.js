@@ -1,15 +1,14 @@
+const auth = require("./json/auth.json");
 const Discord = require("discord.js");
-const Events = require("events");
 const fs = require("fs");
-const Game = require("./gameClasses/game.js");
-const Hangman = require("./gameClasses/hangman.js");
+const Events = require("events");
+const GameManager = require("./gameClasses/gameManager.js");
+
 const TimerEmitter = new Events.EventEmitter();
 const CommandEmitter = new Events.EventEmitter();
-const GameEmitter = new Events.EventEmitter();
 const Bot = new Discord.Client();
-const auth = require("./json/auth.json");
 const config = readJSON("./json/config.json");
-
+let gameManager = new GameManager();
 
 let commandList = [
 	"help",
@@ -18,74 +17,6 @@ let commandList = [
 	"game",
 	"hangman"
 ]
-let games = [];
-
-// Game events
-
-GameEmitter.on("game", function (message, args) 
-{
-	_game(message, args);
-});
-
-GameEmitter.on("display", function (channel, gameIndex, gameList) 
-{
-	_game(message, args);
-});
-
-GameEmitter.on("endGame", function (gameList, gameIndex)
-{
-	_endGame(gameList, gameIndex);
-});
-
-// Game Functions
-
-function checkGameAt(gameList, index)
-{
-	if (!(typeof gameList[index] === 'undefined') && gameList[index].gameover())
-	{
-		GameEmitter.emit("endGame", gameList, index);
-	}
-}
-
-function getGameIndex(gameList, gameId)
-{
-	let index = -1;
-
-	for (let i = 0; i < gameList.length; i++)
-	{
-		if (!(typeof gameList[i] === 'undefined') && (gameList[i].gameID === gameId))
-		{
-			index = i;
-		}
-	}
-	return index;
-}
-
-function getGame(gameList, gameID)
-{
-	if (getGameIndex(gameList, gameID) === -1)
-	{
-		return undefined;
-	}
-	return gameList[getGameIndex(gameList, gameID)];
-
-}
-
-function checkGames(gameList)
-{
-	for (let i = 0; i < gameList.length; i++)
-	{
-		checkGameAt(gameList, i);
-	}
-}
-
-// Game Callbacks
-
-function _endGame(gameList, gameIndex)
-{
-	gameList.splice(gameIndex, 1, undefined);
-}
-
 let stopwatch = {
 	timers: [],
 	names: [],
@@ -158,7 +89,6 @@ function _timerStart(timerIndex)
 		TimerEmitter.emit("end", timerIndex);
 	}, stopwatch.timers[timerIndex] * 1000);
 }
-
 function _timerEnd(timerIndex)
 {
 	clearInterval(stopwatch.handle[timerIndex]);
@@ -172,7 +102,7 @@ function _timerEnd(timerIndex)
 CommandEmitter.on('game', function (message, args) 
 {
 	_game(message, args);
-	checkGames(games);
+	console.log(gameManager.checkGames());
 });
 CommandEmitter.on('hangman', function (message, args) 
 {
@@ -201,17 +131,14 @@ function readJSON(filename)
 {
 	return JSON.parse(fs.readFileSync(filename));
 }
-
 function writeJSON(filename, JSONobj)
 {
 	fs.writeFileSync(filename, JSON.stringify(JSONobj));
 }
-
 function isString(value) 
 {
 	return typeof value === 'string';
 }
-
 function isValidPrefix(prefix)
 {
 	let exemptChars = "\\;";
@@ -219,7 +146,6 @@ function isValidPrefix(prefix)
 	let isExemptChar = exemptChars.includes(prefix);
 	return !isUndefined && !isExemptChar;
 }
-
 function setPrefix(newPrefix)
 {
 	if (isValidPrefix(newPrefix))
@@ -229,7 +155,6 @@ function setPrefix(newPrefix)
 	}
 	return config.prefix;
 }
-
 function listCommands()
 {
 	list = 'Commands:';
@@ -242,23 +167,44 @@ function listCommands()
 
 // Command Callback Functions
 
-function _hangman(message, args, gameID = "" + (games.length + 1))
+function _game(message, args)
 {
-	message.channel.send(`Your game number is ${games.push(new Hangman(gameID, message.channel, args[0]))}`);
+	let game = undefined;
+	let gameID = args.shift();
+	game = gameManager.getGameById(gameID);
+	let gameAction = args.filter(isString);
+	if (typeof game === 'undefined')
+	{
+		message.channel.send(`That game does not exist.`);
+		console.log(`Not a game::${gameID}`);
+	}
+	else if (gameAction.length <= 0)
+	{
+		message.channel.send(game.toString());
+		console.info(game.info());
+	}
+	else
+	{
+		game.turn(message.channel, gameAction[0]);
+	}
 }
-
+function _hangman(message, args)
+{
+	message.channel.send(`Your gameID is ${gameManager.newHangman(message.channel, args[0], (/^ [0 - 9] * $/.test(args[1])) ? args[1] : 5)}`);
+}
 function _help(message, args)
 {
 	let response = "";
 	switch (args)
 	{
 		case "game":
-			response = config.prefix + "game <gameNumber> [gameAction] :: Does [gameAction] in game <gameNumber>.";
-			response += config.prefix + "game <gameNumber> :: Shows info about game <gameNumber>.";
-			response += "\nExample: ~game 1 a\nExample: ~game 2 apple\nExample: ~game 3";
+			response = config.prefix + "game <gameID> [gameAction] :: Does [gameAction] in game <gameID>.";
+			response += config.prefix + "game <gameID> :: Shows info about game <gameID>.";
+			response += "\nExample: ~game 1 a\nExample: ~game myGame apple\nExample: ~game 3";
 			break;
 		case "hangman":
-			response = config.prefix + "hangman [guesses] :: Starts a new hangman game (Default Guesses = 5).";
+			response = config.prefix + "hangman [gameID] [guesses] :: Starts a new hangman game with id [gameID] (Default Guesses = 5).";
+			response += "\nExample: ~hangman lynching\nExample: ~hangman myGame 5\nExample: ~hangman";
 			break;
 		case "help":
 			response = config.prefix + "help [command] :: Shows additional info about [command].\n";
@@ -277,39 +223,15 @@ function _help(message, args)
 	console.log(response);
 	message.channel.send(response);
 }
-
 function _ping(message)
 {
 	console.log("pinged " + message.channel);
 	message.reply("pong");
 }
-
 function _prefix(message, newPrefix)
 {
 	message.channel.send(setPrefix(newPrefix));
 }
-
-function _game(message, args)
-{
-	let game = undefined;
-	let gameID = args.shift();
-	game = getGame(games, gameID);
-	let gameAction = args.filter(isString);
-	if (typeof game === 'undefined')
-	{
-		console.log('Not a game');
-	}
-	else if (gameAction.length <= 0)
-	{
-		message.channel.send(game.toString());
-		console.info(game.info());
-	}
-	else
-	{
-		game.turn(message.channel, gameAction[0]);
-	}
-}
-
 function _timer(message, name, time)
 {
 	time = typeof parseInt(time) !== "number" ? 60 : parseInt(time);
@@ -347,7 +269,6 @@ Bot.on("disconnect", function (evt, error)
 
 // Bot Functions
 
-Bot.setInterval(function () { checkGames(games); }, 3600000); //runs every hour
 Bot.login(auth.token);
 
 // Bot Callback Functions
@@ -356,12 +277,10 @@ function _botWarned(warning)
 {
 	console.warn(warning);
 }
-
 function _botReady()
 {
 	console.log("Ready at " + new Date().toString());
 }
-
 function _botMessaged(message)
 {
 	let messageArr = message.content.split(" ");
@@ -393,7 +312,6 @@ function _botMessaged(message)
 		}
 	}
 }
-
 function _botEmojiDeleted(guild_emoji)
 {
 	new Discord.GuildEmojiManager(guild_emoji.guild).create(
@@ -401,7 +319,6 @@ function _botEmojiDeleted(guild_emoji)
 		guild_emoji.name
 	);
 }
-
 function _botDisconnected(error)
 {
 	console.log("Disconnected");
