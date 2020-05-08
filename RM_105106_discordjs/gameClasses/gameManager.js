@@ -88,4 +88,14 @@ module.exports = class GameManager
 		this.push(new Games.Hangman(uniqueGameId, channel, guesses));
 		return uniqueGameId;
 	}
+
+	//makes a new tictactoe game and adds it to the array
+	//returns the validated gameID
+	newTicTacToe(channel, gameId = this.getUniqueId(), players)
+	{
+		let uniqueGameId = this.makeUnique(gameId);
+		this.push(new Games.TicTacToe(uniqueGameId, channel, players));
+		return uniqueGameId;
+	}
+
 }

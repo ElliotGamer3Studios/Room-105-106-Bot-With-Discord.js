@@ -23,7 +23,7 @@ module.exports = class Game
 	{ this._channel = newChannel; }
 
 	//required method that is overrided in child classes
-	turn(channel, args)
+	turn(message, args)
 	{ }
 
 	gameover()

@@ -15,7 +15,8 @@ let commandList = [
 	"ping",
 	"timer",
 	"game",
-	"hangman"
+	"hangman",
+	"tictactoe"
 ]
 let stopwatch = {
 	timers: [],
@@ -116,6 +117,10 @@ CommandEmitter.on("ping", function (message)
 {
 	_ping(message);
 });
+CommandEmitter.on('tictactoe', function (message, args) 
+{
+	_tictactoe(message, args);
+});
 CommandEmitter.on("timer", function (message, args)
 {
 	_timer(message, args.shift(), args.join(" "));
@@ -185,7 +190,7 @@ function _game(message, args)
 	}
 	else
 	{
-		game.turn(message.channel, gameAction[0]);
+		game.turn(message, gameAction[0]);
 	}
 }
 function _hangman(message, args)
@@ -232,6 +237,25 @@ function _prefix(message, newPrefix)
 {
 	message.channel.send(setPrefix(newPrefix));
 }
+function _tictactoe(message, args)
+{
+	let filter = function (reaction, user)
+	{
+		return (reaction.emoji.name === ':ok:') && (!user.bot) && (user !== message.author)
+	};
+	let options =
+	{
+		time: 60000,
+		max: 1,
+		maxEmojis: 1,
+		maxUsers: 1
+	}
+	message.react('🆗');
+	//gets first reactor userid
+	let firstReact = message.awaitReactions(filter, options);
+	let players = [message.author.id, firstReact.user.id];
+	message.channel.send(`Your gameID is ${gameManager.newTicTacToe(message.channel, args[0], players)}`);
+}
 function _timer(message, name, time)
 {
 	time = typeof parseInt(time) !== "number" ? 60 : parseInt(time);
@@ -246,6 +270,10 @@ function _timer(message, name, time)
 Bot.on("ready", function ()
 {
 	_botReady();
+});
+Bot.on("rateLimit", function (rateLimitInfo)
+{
+	_botRateLimit(rateLimitInfo);
 });
 Bot.on("message", function (message)
 {
@@ -277,6 +305,10 @@ function _botWarned(warning)
 {
 	console.warn(warning);
 }
+function _botRateLimit(rateLimitInfo)
+{
+	Bot.setTimeout(function () { console.log(`Rate Limited for ${rateLimitInfo.timeout}.`); }, rateLimitInfo.timeout);
+}
 function _botReady()
 {
 	console.log("Ready at " + new Date().toString());
@@ -299,6 +331,9 @@ function _botMessaged(message)
 			case 'hangman':
 				CommandEmitter.emit('hangman', message, args);
 				break;
+			// case 'tictactoe':
+			// 	CommandEmitter.emit('tictactoe', message, args);
+			// 	break;
 			case "help":
 				CommandEmitter.emit("help", message, args);
 				break;
@@ -307,6 +342,7 @@ function _botMessaged(message)
 				break;
 			case "timer":
 				CommandEmitter.emit("timer", message, args);
+				break;
 			default:
 				break;
 		}
