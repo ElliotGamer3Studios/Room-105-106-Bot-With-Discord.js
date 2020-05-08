@@ -4,13 +4,9 @@ module.exports = class Hangman extends Game
 	constructor(gameID, channel, guesses = 5)
 	{
 		super(gameID, channel, 'hangman');
-		let fs = require('fs');
-		this._channel = channel;
-		this._gameover = false;
 		this._guessesLeft = guesses;
 		this._guessedLetters = "";
-		this._HangmanJSON = JSON.parse(fs.readFileSync('gameClasses/json/games.json'));
-		this._words = this._HangmanJSON['hangman']['words']
+		this._words = this._JSON['hangman']['words']
 		this._word = this._words[parseInt(Math.floor(Math.random() * this._words.length))].toLowerCase();
 		this._hiddenWord = '-'.repeat(this._word.length);
 		this._chars = Array.from(this._word);
@@ -18,9 +14,6 @@ module.exports = class Hangman extends Game
 	}
 
 	// required methods
-
-	gameover()
-	{ return this._gameover; }
 
 	turn(channel, args)
 	{

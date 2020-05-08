@@ -5,6 +5,9 @@ module.exports = class Game
 		this._gameID = "" + gameID;
 		this._channel = channel;
 		this._gameType = gameType;
+		this._gameover = false;
+		let fs = require('fs');
+		this._JSON = JSON.parse(fs.readFileSync('gameClasses/json/games.json'));
 	}
 
 	get gameID()
@@ -19,12 +22,13 @@ module.exports = class Game
 	set channel(newChannel)
 	{ this._channel = newChannel; }
 
+	//required method that is overrided in child classes
 	turn(channel, args)
 	{ }
 
-	info()
+	gameover()
 	{
-		return `Channel: ${this._channel} :: GameType: ${this._gameType}`;
+		return this._gameover;
 	}
 
 	toString()
@@ -32,4 +36,8 @@ module.exports = class Game
 		return `Channel: ${this._channel} :: GameType: ${this._gameType}`;
 	}
 
+	info()
+	{
+		return `Channel: ${this._channel} :: GameType: ${this._gameType}`;
+	}
 };

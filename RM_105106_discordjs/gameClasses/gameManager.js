@@ -17,7 +17,7 @@ module.exports = class GameManager
 	}
 	getGameById(id)
 	{
-		return this._GameArray.find(function (game) { return game.gameID === id; });
+		return this._GameArray.find(function (game) { return game.gameID === "" + id; });
 	}
 	getGameByIndex(index)
 	{
@@ -27,12 +27,12 @@ module.exports = class GameManager
 	//creates a unique id and returns it
 	getUniqueId()
 	{
-		let id = (this.getEmptyIndex() === -1) ? this._GameArray.length : this.getEmptyIndex();
-		let uniqueId = id;
+		let id = "" + (this.getEmptyIndex() === -1) ? this._GameArray.length + 1 : this.getEmptyIndex();
+		let uniqueId = "" + id;
 		let count = 1;
 		while (!this.isUniqueId(uniqueId))
 		{
-			uniqueId = id + count;
+			uniqueId = "" + id + count;
 			count++;
 		}
 		return uniqueId;
@@ -41,7 +41,7 @@ module.exports = class GameManager
 	//checks is the given id exists already
 	isUniqueId(id)
 	{
-		return this.getGameById(id) === -1;
+		return typeof this.getGameById(id) === 'undefined';
 	}
 
 	//turns an id into a unique id and returns it
