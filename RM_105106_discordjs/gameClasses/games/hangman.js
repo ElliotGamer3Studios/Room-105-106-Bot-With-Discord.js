@@ -15,9 +15,9 @@ module.exports = class Hangman extends Game
 
 	// required methods
 
-	turn(channel, args)
+	turn(message, args)
 	{
-		this._channel = channel;
+		this._channel = message.channel;
 		let guess = args.toString();
 		if (guess.length === 1)
 		{

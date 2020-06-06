@@ -1,5 +1,8 @@
 {
-	"tictactoe": {},
+	"tictactoe": 
+	{
+		"symbols":["X","O"]
+	},
 	"hangman": {
 		"words": [
 			"people",
