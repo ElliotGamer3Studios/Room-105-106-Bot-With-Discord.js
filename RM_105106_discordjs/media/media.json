@@ -1,0 +1,20 @@
+{
+	"type":
+	{
+		"audio":
+		{
+			"path":"audio/",
+			"filePaths":["test.mp3"]
+		},
+		"image":
+		{
+			"path":"image/",
+			"filePaths":["test.png"]
+		},
+		"video":
+		{
+			"path":"video/",
+			"filePaths":["test.mp4"]
+		}
+	}
+}

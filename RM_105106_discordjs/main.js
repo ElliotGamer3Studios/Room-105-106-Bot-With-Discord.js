@@ -3,12 +3,14 @@ const Discord = require("discord.js");
 const fs = require("fs");
 const Events = require("events");
 const GameManager = require("./gameClasses/gameManager.js");
+const VoiceManager = require("./botClasses/voice/botVoice.js");
 
 const TimerEmitter = new Events.EventEmitter();
 const CommandEmitter = new Events.EventEmitter();
 const Bot = new Discord.Client();
 const config = readJSON("./json/config.json");
 let gameManager = new GameManager();
+let voiceManager = new VoiceManager()
 
 let commandList = [
 	"help",
@@ -16,7 +18,9 @@ let commandList = [
 	"timer",
 	"game",
 	"hangman",
-	"tictactoe"
+	"tictactoe",
+	"play",
+	"disconnect"
 ]
 let stopwatch = {
 	timers: [],
@@ -129,6 +133,19 @@ CommandEmitter.on("prefix", function (message, args)
 {
 	_prefix(message, args.shift());
 });
+CommandEmitter.on("play", function (message, args)
+{
+	_play(message, args.shift());
+});
+CommandEmitter.on("disconnect", function (message, args)
+{
+	_disconnect();
+});
+CommandEmitter.on("moveUsers", function (message, args)
+{
+	_moveUsers(message, args);
+});
+
 
 // Command Functions
 
@@ -233,6 +250,30 @@ function _ping(message)
 	console.log("pinged " + message.channel);
 	message.reply("pong");
 }
+function _play(message, media)
+{
+
+	//RM_105106_discordjs\media\audio\test.mp3
+	if (!voiceManager.isConnected())
+	{
+		voiceManager.joinVoice(message, media).then(function(value) 
+			{
+				console.log(value);
+				voiceManager.connected();
+			},
+			function(reason)
+			{
+				console.log(reason);
+				voiceManager.notConnected();
+			});
+	}
+}
+
+function _disconnect()
+{
+	voiceManager.disconnectVoice();
+}
+
 function _prefix(message, newPrefix)
 {
 	message.channel.send(setPrefix(newPrefix));
@@ -263,6 +304,11 @@ function _timer(message, name, time)
 	TimerEmitter.emit("start", startTimer(time, name, message));
 	console.log(`Timer ${name} set for ${time} seconds`);
 	message.reply(`Timer ${name} set for ${time} seconds`);
+}
+function _moveUsers(message, args)
+{
+	let voice_channel = new Voice_channel(message.member.voice.channel);
+	voice_channel.moveUsers(args[1]);
 }
 
 // Bot Events
@@ -342,6 +388,15 @@ function _botMessaged(message)
 				break;
 			case "timer":
 				CommandEmitter.emit("timer", message, args);
+				break;
+			// case "moveUsers":
+			// 	CommandEmitter.emit("moveUsers", message, args);
+			// 	break;
+			case "play":
+				CommandEmitter.emit("play", message, args);
+				break;
+			case "disconnect":
+				CommandEmitter.emit("disconnect", message, args);
 				break;
 			default:
 				break;
