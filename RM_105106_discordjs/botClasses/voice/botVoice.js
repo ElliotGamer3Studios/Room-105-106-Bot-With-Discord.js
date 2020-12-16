@@ -2,9 +2,7 @@ module.exports = class BotVoice
 {
 	constructor()
 	{
-		this._volume;
-		this._dispatcher;
-		this._connection;
+		this._volume = 1.0;
 		this._isConnected = false;
 	}
 	isConnected()
@@ -18,9 +16,8 @@ module.exports = class BotVoice
 
 		if (message.member.voice.channel) 
 		{
-			const connection = await message.member.voice.channel.join();
-			this._dispatcher = connection.play(url);
-			return Promise.resolve("playing");
+			this.connection = await message.member.voice.channel.join();
+			return Promise.resolve(url);
 		} 
 		else 
 		{
@@ -29,6 +26,23 @@ module.exports = class BotVoice
 		}
 
 	}
+	
+	play(url)
+	{
+		this.dispatcher = this.connection.play(url);
+		this.dispatcher.on('finished', function()
+		{
+			console.log("Played " + url);
+		});
+		this.dispatcher.destroy();
+	}
+
+	disconnectVoice()
+	{
+		this.dispatcher.destroy();
+		this.connection.disconnect();
+	}
+
  	connected()
 	{
 		this._isConnected = true;
@@ -39,11 +53,6 @@ module.exports = class BotVoice
 		this._isConnected = false;
 	}
 
-	disconnectVoice()
-	{
-		this._dispatcher.destroy();
-		this._isConnected = false;
-	}
 	pause()
 	{
 		this._dispatcher.pause();

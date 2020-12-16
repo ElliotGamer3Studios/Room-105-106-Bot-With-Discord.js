@@ -256,10 +256,11 @@ function _play(message, media)
 	//RM_105106_discordjs\media\audio\test.mp3
 	if (!voiceManager.isConnected())
 	{
-		voiceManager.joinVoice(message, media).then(function(value) 
+		voiceManager.joinVoice(message).then(function(media) 
 			{
-				console.log(value);
 				voiceManager.connected();
+				console.log(media);
+				voiceManager.play(media);
 			},
 			function(reason)
 			{

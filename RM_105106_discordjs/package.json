@@ -5,6 +5,8 @@
 	"main": "main.js",
 	"author": "ElliotGamer3",
 	"dependencies": {
-		"discord.js": "^12.1.1"
+		"@discordjs/opus": "^0.3.3",
+		"discord.js": "^12.1.1",
+		"ffmpeg-static": "^4.2.7"
 	}
 }
