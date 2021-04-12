@@ -1,6 +1,6 @@
 {
-	"name": "room_105_106",
-	"version": "1.1.0",
+	"name": "room_105_106_bot",
+	"version": "1.1.1",
 	"description": "The bot of the server",
 	"main": "main.js",
 	"author": "ElliotGamer3",

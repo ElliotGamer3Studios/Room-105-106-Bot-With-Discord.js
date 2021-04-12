@@ -1,0 +1,40 @@
+{
+  "Actions": [
+    {
+      "Icon": "actionIcon", 
+      "Name": "test", 
+      "States": [
+        {
+          "Image": "actionDefaultImage",
+          "TitleAlignment": "middle", 
+          "FontSize": "16"
+        }
+      ], 
+      "SupportedInMultiActions": false,
+      "Tooltip": "How many times did you get pwned today? Keep track with this counter.", 
+      "UUID": "com.elgato.counter.action"
+    }
+  ], 
+  "SDKVersion": 2,
+  "Author": "Elgato", 
+  "CodePath": "streamDeck.js", 
+  "Description": "Track the number of times you press a key.", 
+  "Name": "test", 
+  "Icon": "pluginIcon", 
+  "URL": "", 
+  "Version": "1.4",
+  "OS": [
+    {
+        "Platform": "mac", 
+        "MinimumVersion" : "10.11"
+    },
+    {
+        "Platform": "windows", 
+        "MinimumVersion" : "10"
+    }
+  ],
+  "Software": 
+    {
+        "MinimumVersion" : "4.1"
+    }
+}

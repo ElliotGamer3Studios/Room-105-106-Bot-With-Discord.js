@@ -4,10 +4,12 @@ const fs = require("fs");
 const Events = require("events");
 const GameManager = require("./gameClasses/gameManager.js");
 const VoiceManager = require("./botClasses/voice/botVoice.js");
+const StreamDeck = require("./streamdeck/source/streamDeck.js");
 
 const TimerEmitter = new Events.EventEmitter();
 const CommandEmitter = new Events.EventEmitter();
 const Bot = new Discord.Client();
+let streamDeck = new StreamDeck(Bot);
 const config = readJSON("./json/config.json");
 let gameManager = new GameManager();
 let voiceManager = new VoiceManager()
