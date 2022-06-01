@@ -9,6 +9,12 @@ const CommandEmitter = new Events.EventEmitter();
 const Bot = new Discord.Client();
 const config = readJSON("./json/config.json");
 let gameManager = new GameManager();
+let emojiManager = new Discord.GuildEmojiManager();
+let guild = new Discord.Guild(Bot);
+let guildOwner = guild.ownerID;
+let roleManager = new Discord.GuildMemberRoleManager();
+
+let plannedForDeletion = [];
 
 let commandList = [
 	"help",
@@ -100,12 +106,12 @@ function _timerEnd(timerIndex)
 
 // Command Events
 
-CommandEmitter.on('game', function (message, args) 
+CommandEmitter.on('game', function (message, args)
 {
 	_game(message, args);
 	console.log(gameManager.checkGames());
 });
-CommandEmitter.on('hangman', function (message, args) 
+CommandEmitter.on('hangman', function (message, args)
 {
 	_hangman(message, args);
 });
@@ -117,7 +123,7 @@ CommandEmitter.on("ping", function (message)
 {
 	_ping(message);
 });
-CommandEmitter.on('tictactoe', function (message, args) 
+CommandEmitter.on('tictactoe', function (message, args)
 {
 	_tictactoe(message, args);
 });
@@ -128,6 +134,14 @@ CommandEmitter.on("timer", function (message, args)
 CommandEmitter.on("prefix", function (message, args)
 {
 	_prefix(message, args.shift());
+});
+CommandEmitter.on("emotedelete", function (message, args)
+{
+	_emoteDelete(message, args.shift());
+});
+CommandEmitter.on("emoteprotect", function (message, args)
+{
+	_emoteProtect(message, args.shift());
 });
 
 // Command Functions
@@ -140,7 +154,7 @@ function writeJSON(filename, JSONobj)
 {
 	fs.writeFileSync(filename, JSON.stringify(JSONobj));
 }
-function isString(value) 
+function isString(value)
 {
 	return typeof value === 'string';
 }
@@ -265,6 +279,50 @@ function _timer(message, name, time)
 	message.reply(`Timer ${name} set for ${time} seconds`);
 }
 
+//does not delete the emoji but allows it to be deleted
+function _emoteDelete(message, args)
+{
+	let authorMember = (message.inGuild()) ? message.member : undefined;
+	if (authorMember == undefined)
+	{
+		console.log(`Emote can't be deleted. Not in a guild.`);
+		return;
+	}
+	let roleManager = authorMember.roles;
+	let roles = roleManager.cache.values();
+	let role = roles.next();
+	while (role)
+	{
+		if (role.name == config.emojiModRole)
+		{
+			plannedForDeletion.push(args[0]); //add to planned for deletion
+			console.log(`${role.name} marked as planned for deletion.`);
+		}
+	}
+}
+
+//reverts marking a emoji for deletion.
+function _emoteProtect(message, args)
+{
+	let authorMember = (message.inGuild()) ? message.member : undefined;
+	if (authorMember == undefined)
+	{
+		console.log(`Emote can't be protected. Not in a guild.`);
+		return;
+	}
+	let roleManager = authorMember.roles;
+	let roles = roleManager.cache.values();
+	let role = roles.next();
+	while (role)
+	{
+		if (role.name == config.emojiModRole && args[0] in plannedForDeletion)
+		{
+			plannedForDeletion.splice(plannedForDeletion.indexOf(args[0]), 1); //removed from planned for deletion
+			console.log(`${role.name} marked as protected.`);
+		}
+	}
+}
+
 // Bot Events
 
 Bot.on("ready", function ()
@@ -331,7 +389,7 @@ function _botMessaged(message)
 			case 'hangman':
 				CommandEmitter.emit('hangman', message, args);
 				break;
-			// case 'tictactoe':
+			//  case 'tictactoe':
 			// 	CommandEmitter.emit('tictactoe', message, args);
 			// 	break;
 			case "help":
@@ -343,6 +401,12 @@ function _botMessaged(message)
 			case "timer":
 				CommandEmitter.emit("timer", message, args);
 				break;
+			case "emotedelete":
+				CommandEmitter.emit("emotedelete", message, args);
+				break;
+			case "emoteprotect":
+				CommandEmitter.emit("emoteprotect", message, args);
+				break;
 			default:
 				break;
 		}
@@ -350,10 +414,18 @@ function _botMessaged(message)
 }
 function _botEmojiDeleted(guild_emoji)
 {
-	new Discord.GuildEmojiManager(guild_emoji.guild).create(
-		guild_emoji.url,
-		guild_emoji.name
-	);
+	//if it is not planned for deletion add it back
+	if (!(guild_emoji.name in plannedForDeletion))
+	{
+		//recreate the emoji in the server
+		new Discord.GuildEmojiManager(guild_emoji.guild).create(
+			guild_emoji.url,
+			guild_emoji.name
+		);
+		console.log(`Protected ${guild_emoji.name} from deletion.`);
+		return;
+	}
+	plannedForDeletion.splice(plannedForDeletion.indexOf(guild_emoji.name), 1); //removed from planned for deletion
 }
 function _botDisconnected(error)
 {
