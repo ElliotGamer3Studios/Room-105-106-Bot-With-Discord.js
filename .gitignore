@@ -1,4 +1,7 @@
 RM_105106_discordjs/json/auth.json
 RM_105106_discordjs/node_modules/*
+RM_105106_discordjs/node_modules/
 RM_105106_discordjs/package-lock.json
 RM_105106_discordjs/.vscode/*
+RM_105106_discordjs/.vscode/
+RM_105106_discordjs/.vscode/launch.json
