@@ -3,6 +3,10 @@ const Discord = require("discord.js");
 const fs = require("fs");
 const Events = require("events");
 const GameManager = require("./gameClasses/gameManager.js");
+// const Protocols = require("./util/");
+// const AIGenerationProtocol = Protocols.AIGenerationProtocol;
+const { exec } = require('child_process');
+const { setTimeout } = require("timers");
 
 const TimerEmitter = new Events.EventEmitter();
 const CommandEmitter = new Events.EventEmitter();
@@ -16,7 +20,8 @@ let commandList = [
 	"timer",
 	"game",
 	"hangman",
-	"tictactoe"
+	"tictactoe",
+	"generate"
 ]
 let stopwatch = {
 	timers: [],
@@ -100,12 +105,12 @@ function _timerEnd(timerIndex)
 
 // Command Events
 
-CommandEmitter.on('game', function (message, args) 
+CommandEmitter.on('game', function (message, args)
 {
 	_game(message, args);
 	console.log(gameManager.checkGames());
 });
-CommandEmitter.on('hangman', function (message, args) 
+CommandEmitter.on('hangman', function (message, args)
 {
 	_hangman(message, args);
 });
@@ -117,7 +122,7 @@ CommandEmitter.on("ping", function (message)
 {
 	_ping(message);
 });
-CommandEmitter.on('tictactoe', function (message, args) 
+CommandEmitter.on('tictactoe', function (message, args)
 {
 	_tictactoe(message, args);
 });
@@ -128,6 +133,10 @@ CommandEmitter.on("timer", function (message, args)
 CommandEmitter.on("prefix", function (message, args)
 {
 	_prefix(message, args.shift());
+});
+CommandEmitter.on("generate", function (message, args)
+{
+	_generate(message, args);
 });
 
 // Command Functions
@@ -140,7 +149,7 @@ function writeJSON(filename, JSONobj)
 {
 	fs.writeFileSync(filename, JSON.stringify(JSONobj));
 }
-function isString(value) 
+function isString(value)
 {
 	return typeof value === 'string';
 }
@@ -221,6 +230,8 @@ function _help(message, args)
 		case "timer":
 			response = config.prefix + "timer <name> <length> :: Sets a timer named <name> for <length> seconds.";
 			break;
+		case "generate":
+			response = config.prefix + "generate image";
 		default:
 			response = listCommands();
 			break;
@@ -263,6 +274,114 @@ function _timer(message, name, time)
 	TimerEmitter.emit("start", startTimer(time, name, message));
 	console.log(`Timer ${name} set for ${time} seconds`);
 	message.reply(`Timer ${name} set for ${time} seconds`);
+}
+
+async function generate_image(
+	prompt,
+	neg_prompt,
+	guidance_scale = 7.5,
+	height = 256,
+	width = 256,
+	num_inference_steps = 50,
+	num_imgs_per_prompt = 1,
+	flags = "--safe-checker")
+{
+	if (!flags.includes("--safe-checker"))
+	{
+		flags += " --safe-checker";
+	}
+	//send a message to the server starting with "GENERATE"
+	let message = "GENERATE;" +
+		"PROMPT:" + prompt.replace('/\W/g', ' ') +
+		";NEG_PROMPT:" + neg_prompt.replace('/\W/g', ' ') +
+		";GUIDANCE_SCALE:" + guidance_scale +
+		";HEIGHT:" + height +
+		";WIDTH:" + width +
+		";NUM_INFERENCE_STEPS:" + num_inference_steps +
+		";NUM_IMGS_PER_PROMPT:" + num_imgs_per_prompt +
+		";FLAGS:" + flags;
+	//launch the python script with the message as an argument
+	//if the os is windows, use the windows version of the script
+	return new Promise((resolve, reject) =>
+	{
+		if (process.platform === "win32")
+		{
+			exec(`python3 ${__dirname}\\AIimage\\client.py --suppress --message "${message}"`, (err, stdout, stderr) =>
+			{
+				if (err)
+				{
+					reject(stderr);
+				}
+				resolve(stdout);
+			});
+		}
+		else
+		{
+			exec(`python3 ${__dirname}/AIimage/client.py --suppress --message "${message}"`, (err, stdout, stderr) =>
+			{
+				if (err)
+				{
+					reject(stderr);
+				}
+				resolve(stdout);
+			});
+		}
+	});
+}
+
+function _generate(message, args)
+{
+	console.log("Generating...");
+	console.log(args);
+	message.channel.send("Generating...");
+	let imagePrompt = "";
+	let negPrompt = "";
+	let guidanceScale = 7.5;
+	let numInferenceSteps = 50;
+	let width = 512;
+	let height = 512;
+	if (args.indexOf("--prompt") > -1)
+	{
+		//add the next elements to the prompt until a flag is reached
+		for (let i = args.indexOf("--prompt") + 1; i < args.length; i++)
+		{
+			if (args[i].indexOf("--") > -1)
+			{
+				break;
+			}
+			imagePrompt += args[i] + " ";
+		}
+	}
+	if (args.indexOf("--neg-prompt") > -1)
+	{
+		//add the next elements to the prompt until a flag is reached
+		for (let i = args.indexOf("--neg-prompt") + 1; i < args.length; i++)
+		{
+			if (args[i].indexOf("--") > -1)
+			{
+				break;
+			}
+			imagePrompt += args[i] + " ";
+		}
+	}
+	if (args.indexOf("--guidance-scale") > -1)
+	{
+		guidanceScale = args[args.indexOf("--guidance-scale") + 1];
+	}
+	if (args.indexOf("--num-inference-steps") > -1)
+	{
+		numInferenceSteps = args[args.indexOf("--num-inference-steps") + 1];
+	}
+
+	// run the image generation using python client code
+	generate_image(imagePrompt, negPrompt, guidanceScale, width, height, numInferenceSteps).then(
+		(data) =>
+		{
+			console.log(data);
+			//send the generated image to the channel
+			message.channel.send({ files: [`${__dirname}/media/image/temp.png`] });
+		}
+	).catch((err) => console.log(err));
 }
 
 // Bot Events
@@ -342,6 +461,9 @@ function _botMessaged(message)
 				break;
 			case "timer":
 				CommandEmitter.emit("timer", message, args);
+				break;
+			case "generate":
+				CommandEmitter.emit("generate", message, args);
 				break;
 			default:
 				break;
